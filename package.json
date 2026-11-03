@@ -1,0 +1,23 @@
+{
+  "name": "trove-guard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "@openzeppelin/contracts": "^5.6.1",
+    "hardhat": "^2.29.1"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "ethers": "^6.17.0",
+    "node-telegram-bot-api": "^2.2.0"
+  }
+}
