@@ -27,6 +27,8 @@ async function queuePosition(borrower, price, max = 400) {
 
 async function snapshot(borrower) {
   const price = await pf.fetchPrice();
+  const status = await tm.getTroveStatus(borrower); // 1 = active
+  if (status !== 1n) return { price, icr: 0n, icrPct: 0, ahead: null, status };
   const icr = await tm.getCurrentICR(borrower, price);
   return { price, icr, icrPct: Number(icr) / 1e16, ahead: await queuePosition(borrower, price) };
 }

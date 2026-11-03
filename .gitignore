@@ -2,3 +2,6 @@ node_modules
 .env
 cache
 artifacts
+.secrets
+data
+logs
