@@ -1,0 +1,1 @@
+{ "name": "trove-guard-bot", "private": true, "dependencies": { "@vercel/blob": "latest", "ethers": "^6" } }
