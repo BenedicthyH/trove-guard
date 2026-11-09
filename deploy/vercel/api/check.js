@@ -48,10 +48,12 @@ module.exports = async (req, res) => {
       const kind = alerts.band(s.icrPct);
       if (kind && await alerts.shouldSend(state, chat, a, kind)) {
         await tg("sendMessage", { chat_id: chat, text: alerts.bandMsg(kind, a, s) });
+        alerts.markSent(state, chat, a, kind);
         out.alerted++;
       }
       if (s.ahead !== null && s.ahead <= 5 && await alerts.shouldSend(state, chat, a, "queue")) {
         await tg("sendMessage", { chat_id: chat, text: alerts.bandMsg("queue", a, s) });
+        alerts.markSent(state, chat, a, "queue");
         out.alerted++;
       }
       // Re-arm nudge if vault exists, has reserve, not armed
@@ -63,6 +65,7 @@ module.exports = async (req, res) => {
           if (!armed && reserve > 0n && await alerts.shouldSend(state, chat, a, "rearm")) {
             const link = `${BASE}/arm.html?owner=${a}&vault=${vAddr}`;
             await tg("sendMessage", { chat_id: chat, text: alerts.bandMsg("rearm", link, s) });
+            alerts.markSent(state, chat, a, "rearm");
             out.alerted++;
           }
         }

@@ -36,12 +36,17 @@ function bandMsg(kind, a, s) {
   return null;
 }
 
+function alertKey(chat, addr, kind) {
+  return `${chat}|${String(addr).toLowerCase()}|${kind}`;
+}
+/** True if cooldown allows a send. Does not stamp; call markSent after success. */
 async function shouldSend(state, chat, addr, kind) {
-  const k = `${chat}|${addr.toLowerCase()}|${kind}`;
+  const k = alertKey(chat, addr, kind);
   const last = state[k] || 0;
-  if (Date.now() - last < COOLDOWN_MS) return false;
-  state[k] = Date.now();
-  return true;
+  return Date.now() - last >= COOLDOWN_MS;
+}
+function markSent(state, chat, addr, kind) {
+  state[alertKey(chat, addr, kind)] = Date.now();
 }
 
-module.exports = { load, save, band, bandMsg, shouldSend, COOLDOWN_MS };
+module.exports = { load, save, band, bandMsg, shouldSend, markSent, COOLDOWN_MS };
