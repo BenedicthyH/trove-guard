@@ -18,5 +18,9 @@
   "dependencies": {
     "dotenv": "^18.0.9",
     "ethers": "^6.17.0"
+  },
+  "allowScripts": {
+    "keccak@3.0.4": true,
+    "secp256k1@4.0.5": true
   }
 }

@@ -1,4 +1,6 @@
 // Read-only risk engine: ICR, liquidation price, redemption queue position.
+// Note: Mezo TroveManager.getEntireDebtAndColl returns (coll, principal, interest, ...),
+// not Liquity's (debt, coll, ...). Prefer getCurrentICR for ratio checks.
 const { ethers } = require("ethers");
 const A = require("./addresses");
 const p = new ethers.JsonRpcProvider(A.rpc);

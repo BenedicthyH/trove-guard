@@ -30,7 +30,7 @@ All from github.com/mezo-org/musd (main), cross-checked against https://rpc.test
 ## Milestones
 - Nov 3: verify, scaffold, unit tests on mocks (done).
 - Nov 4: fork test against matsnet contracts with a real signed RepayMUSD; hints.
-- Nov 5: deploy factory to testnet, open own trove, first real rescue tx.
+- Nov 5: deploy factory to testnet, open own trove, first real rescue tx. **DONE 2026-11-09** — factory `0x505895594A647eC13686dAf3Eb5964616c7192fA`, vault `0xB4ab1E3Dd0bc1A43340da6DA71a9CDE321f515db`, rescue tx `0xdf59cfbce54db4e5a6785f88e8012fe1ed30dafdfefb75fa7a448113b9f9f17f`. Used a high triggerICR (150%) above the healthy ~129% ICR to exercise the real signed repay path without waiting for liquidation risk. Details in `logs/testnet-rescue.json`.
 - Nov 6: BTC-gain addColl path, getNonce staleness check, minNetDebt cap.
 - Nov 7: keeper hosted 24/7, redemption-queue alerts.
 - Nov 8: Telegram bot with persistence, premium check.
