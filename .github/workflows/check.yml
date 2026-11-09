@@ -1,0 +1,29 @@
+name: trove-guard-check
+
+on:
+  schedule:
+    # Every 5 minutes. GitHub may delay scheduled runs.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call proactive check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET missing" >&2
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/check-body.json -w "%{http_code}" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "accept: application/json" \
+            "https://trove-guard-bot.vercel.app/api/check")
+          echo "http_status=${code}"
+          head -c 500 /tmp/check-body.json; echo
+          test "${code}" = "200"
