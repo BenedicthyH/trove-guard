@@ -52,3 +52,7 @@ All from github.com/mezo-org/musd (main), cross-checked against https://rpc.test
 - SP losses in liquidations reduce the reserve; show it clearly.
 - Signature replay is prevented by Mezo nonce; our risk is stale signatures.
 - Testnet MUSD needs a trove; faucet gives BTC and MEZO.
+
+## Live bot (Vercel)
+- URL https://trove-guard-bot.vercel.app — webhook `/api/telegram`, health `/api/health`, proactive `/api/check` (header `x-cron-secret`), re-arm page `/arm.html`.
+- Hobby cron is once/day only. For alerts every few minutes use a free external ping of `/api/check` (see hosting options below). Do not subscribe to paid hosts without Benedict approval.

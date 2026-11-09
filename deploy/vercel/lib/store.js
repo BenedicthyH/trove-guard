@@ -11,4 +11,5 @@ module.exports = {
   async add(c, a) { const d = await load(); d[c] = [...new Set([...(d[c] || []), a])]; await save(d); },
   async remove(c, a) { const d = await load(); d[c] = (d[c] || []).filter((x) => x !== a); await save(d); },
   async count() { const d = await load(); return Object.values(d).reduce((n, l) => n + l.length, 0); },
+  async all() { return load(); },
 };

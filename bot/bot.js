@@ -13,6 +13,7 @@ const COMMANDS = [
   { command: "help", description: "List commands" },
   { command: "watch", description: "Watch a Mezo testnet trove: /watch 0x..." },
   { command: "status", description: "Live ICR and redemption risk: /status 0x..." },
+  { command: "arm", description: "Open re-sign page after a rescue: /arm 0x..." },
   { command: "unwatch", description: "Stop watching: /unwatch 0x..." },
   { command: "list", description: "Troves you are watching" },
 ];
@@ -21,6 +22,7 @@ const HELP = [
   "/watch 0x... add a trove",
   "/status 0x... live ICR, liquidation distance, redemption queue",
   "/status shows all watched troves if no address is given",
+  "/arm 0x... open the re-sign page for your vault (after a rescue)",
   "/unwatch 0x... remove a trove",
   "/list your watched troves",
 ].join("\n");
@@ -36,6 +38,12 @@ async function handle(m) {
   if (cmd === "/list") { const l = store.list(chat); return send(chat, l.length ? l.join("\n") : "Nothing watched. Use /watch 0x..."); }
   if (cmd === "/watch") { const a = addr(arg); if (!a) return send(chat, "Usage: /watch 0xYourAddress"); store.add(chat, a); return send(chat, `Watching ${a}`); }
   if (cmd === "/unwatch") { const a = addr(arg); if (!a) return send(chat, "Usage: /unwatch 0xYourAddress"); store.remove(chat, a); return send(chat, `Stopped watching ${a}`); }
+  if (cmd === "/arm") {
+    const a = addr(arg) || store.list(chat)[0];
+    if (!a) return send(chat, "Usage: /arm 0xBorrowerAddress (or /watch one first)");
+    const link = `https://trove-guard-bot.vercel.app/arm.html?owner=${a}`;
+    return send(chat, `Re-arm your TroveGuard vault (Mezo testnet).\nOpen this on a wallet browser, sign RepayMUSD, then confirm arm():\n${link}`);
+  }
   if (cmd === "/status") {
     const targets = arg ? [addr(arg)] : store.list(chat);
     if (!targets.length || targets.includes(null)) return send(chat, "Usage: /status 0xYourAddress, or /watch one first");

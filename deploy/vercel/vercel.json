@@ -1,1 +1,7 @@
-{ "functions": { "api/telegram.js": { "maxDuration": 60 }, "api/health.js": { "maxDuration": 20 } } }
+{
+  "functions": {
+    "api/telegram.js": { "maxDuration": 60 },
+    "api/health.js": { "maxDuration": 20 },
+    "api/check.js": { "maxDuration": 60 }
+  }
+}

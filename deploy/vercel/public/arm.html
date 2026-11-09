@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TroveGuard — re-arm</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0f1115; --card:#1a1d24; --accent:#f97316; --text:#e8eaed; --muted:#9aa0a6; --ok:#34d399; --bad:#f87171; }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 15px/1.45 system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width: 560px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    p.sub { color: var(--muted); margin: 0 0 20px; }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a2f3a; background:#0c0e12; color:var(--text); margin-bottom:12px; }
+    button { width:100%; padding:12px; border:0; border-radius:8px; background:var(--accent); color:#111; font-weight:600; cursor:pointer; margin-top:4px; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    button.secondary { background:#2a2f3a; color:var(--text); }
+    pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; background:#0c0e12; padding:10px; border-radius:8px; color:var(--muted); max-height:220px; overflow:auto; }
+    .ok { color: var(--ok); } .bad { color: var(--bad); }
+    .row { display:flex; gap:8px; } .row > * { flex:1; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Re-arm TroveGuard</h1>
+  <p class="sub">Mezo testnet only. Signs one EIP-712 RepayMUSD, then calls vault.arm(). After each rescue you must re-sign (shared Mezo nonce).</p>
+
+  <div class="card">
+    <label>Borrower (owner)</label>
+    <input id="owner" placeholder="0x..." />
+    <label>Vault (optional — looked up from factory if empty)</label>
+    <input id="vault" placeholder="0x..." />
+    <label>Factory</label>
+    <input id="factory" value="0x505895594A647eC13686dAf3Eb5964616c7192fA" />
+    <div class="row">
+      <div><label>Rescue amount (MUSD)</label><input id="amount" value="100" /></div>
+      <div><label>Trigger ICR %</label><input id="triggerPct" value="150" /></div>
+    </div>
+    <div class="row">
+      <div><label>Tip bps (max 200)</label><input id="tipBps" value="100" /></div>
+      <div><label>Deadline days</label><input id="days" value="7" /></div>
+    </div>
+    <button id="connect" class="secondary">Connect wallet</button>
+    <button id="arm" disabled>Sign + arm</button>
+  </div>
+
+  <div class="card">
+    <div id="status">Ready.</div>
+    <pre id="typed"></pre>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+const BOS = "0xD757e3646AF370b15f32EB557F0F8380Df7D639e";
+const RPC = "https://rpc.test.mezo.org";
+const CHAIN_ID = 31611n;
+const DOMAIN = { name: "BorrowerOperationsSignatures", version: "1", chainId: 31611, verifyingContract: BOS };
+const TYPES = { RepayMUSD: [
+  { name: "amount", type: "uint256" },
+  { name: "borrower", type: "address" },
+  { name: "nonce", type: "uint256" },
+  { name: "deadline", type: "uint256" },
+]};
+const VAULT_ABI = [
+  "function arm(uint256,uint256,uint256,uint256,bytes)",
+  "function owner() view returns (address)",
+  "function armed() view returns (bool)",
+];
+const FACTORY_ABI = ["function vaultOf(address) view returns (address)"];
+const BOS_ABI = ["function getNonce(address) view returns (uint256)"];
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+if (params.get("owner")) $("owner").value = params.get("owner");
+if (params.get("vault")) $("vault").value = params.get("vault");
+if (params.get("factory")) $("factory").value = params.get("factory");
+if (params.get("amount")) $("amount").value = params.get("amount");
+
+let provider, signer, account;
+
+function setStatus(html, cls) {
+  $("status").className = cls || "";
+  $("status").innerHTML = html;
+}
+
+async function ensureChain() {
+  const net = await provider.getNetwork();
+  if (net.chainId !== CHAIN_ID) {
+    try {
+      await provider.send("wallet_switchEthereumChain", [{ chainId: "0x7b7b" }]);
+    } catch (e) {
+      if (e.code === 4902) {
+        await provider.send("wallet_addEthereumChain", [{
+          chainId: "0x7b7b",
+          chainName: "Mezo Testnet",
+          nativeCurrency: { name: "BTC", symbol: "BTC", decimals: 18 },
+          rpcUrls: [RPC],
+          blockExplorerUrls: ["https://explorer.test.mezo.org"],
+        }]);
+      } else throw e;
+    }
+  }
+}
+
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) throw new Error("No wallet found. Open this page in a wallet browser.");
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    await ensureChain();
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    if (!$("owner").value) $("owner").value = account;
+    $("arm").disabled = false;
+    setStatus("Connected " + account, "ok");
+  } catch (e) {
+    setStatus(e.message || String(e), "bad");
+  }
+};
+
+$("arm").onclick = async () => {
+  try {
+    if (!signer) throw new Error("Connect wallet first");
+    await ensureChain();
+    const owner = ethers.getAddress($("owner").value.trim());
+    const me = await signer.getAddress();
+    if (me.toLowerCase() !== owner.toLowerCase()) throw new Error("Connected wallet must be the borrower/owner");
+
+    let vaultAddr = ($("vault").value || "").trim();
+    const factoryAddr = ethers.getAddress($("factory").value.trim());
+    const read = new ethers.JsonRpcProvider(RPC);
+    if (!vaultAddr) {
+      const f = new ethers.Contract(factoryAddr, FACTORY_ABI, read);
+      vaultAddr = await f.vaultOf(owner);
+      if (vaultAddr === ethers.ZeroAddress) throw new Error("No vault for this owner. Create one first.");
+      $("vault").value = vaultAddr;
+    } else {
+      vaultAddr = ethers.getAddress(vaultAddr);
+    }
+
+    const amount = ethers.parseEther(String($("amount").value || "100"));
+    const triggerPct = Number($("triggerPct").value || "150");
+    const triggerICR = ethers.parseEther(String(triggerPct / 100));
+    const tipBps = BigInt($("tipBps").value || "100");
+    if (tipBps > 200n) throw new Error("tip bps max 200");
+    const days = Number($("days").value || "7");
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + Math.floor(days * 86400));
+
+    const bos = new ethers.Contract(BOS, BOS_ABI, read);
+    const nonce = await bos.getNonce(owner);
+    const message = { amount, borrower: owner, nonce, deadline };
+    const typed = { domain: DOMAIN, types: TYPES, primaryType: "RepayMUSD", message: {
+      amount: amount.toString(), borrower: owner, nonce: nonce.toString(), deadline: deadline.toString(),
+    }};
+    $("typed").textContent = JSON.stringify(typed, null, 2);
+
+    setStatus("Sign RepayMUSD in your wallet…");
+    const signature = await signer.signTypedData(DOMAIN, TYPES, message);
+    setStatus("Sending arm()…");
+    const vault = new ethers.Contract(vaultAddr, VAULT_ABI, signer);
+    const tx = await vault.arm(triggerICR, amount, deadline, tipBps, signature);
+    setStatus("arm tx " + tx.hash + " — waiting…", "ok");
+    await tx.wait();
+    setStatus("Armed. Vault " + vaultAddr + "<br>tx " + tx.hash, "ok");
+  } catch (e) {
+    setStatus((e.shortMessage || e.message || String(e)), "bad");
+  }
+};
+</script>
+</body>
+</html>
